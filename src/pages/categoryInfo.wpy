@@ -1,0 +1,155 @@
+
+<style lang="scss">
+    .category_info{
+        &_wrap{
+            padding: 0 30rpx;
+        }
+        &_top{
+            width: 100%;
+            background-color: #fff;
+            border-bottom: 1px solid #ccc;
+            position: fixed;
+            left: 0;top: 0;
+            z-index: 99;
+        }
+        &_view{
+            padding-top: 70rpx;
+        }
+    }
+    .icon_size{
+        font-size: 48rpx;
+        text-align: right!important;
+        padding-right: 42rpx;
+    }
+</style>
+
+<template>
+
+    <view class="category_info_wrap">
+
+        <view class="category_info_top">
+            <sort-tab-switch :sortTabSwitchConfig.sync="sortTabSwitchConfig" @changeItem.user="changeItem"></sort-tab-switch>
+        </view>
+
+        <view class="category_info_view">
+            <repeat for="{{goodsListConfig}}" item="item" index="index" key="key">
+                <goods-list :goodsListConfig.sync="item">
+                    <view slot="title">
+                        {{item.title}}
+                    </view>
+                </goods-list>
+            </repeat>
+        </view>
+
+    </view>
+
+</template>
+
+<script>
+
+    import wepy from 'wepy'
+    import GoodsList from '../components/GoodsList'
+    import getExtJson from '../mixins/getExtJson.js'
+    import SortTabSwitch from '../components/SortTabSwitch'
+
+    export default class CategoryInfo extends wepy.page{
+        components = {
+            'goods-list': GoodsList,
+            'sort-tab-switch': SortTabSwitch
+        }
+        data = {
+            goodsListConfig: [],
+            listStyle: [],
+            listStyleStatus: true,
+            categoryId: '',
+            sortTabSwitchConfig: [
+                {
+                    name: '综合',
+                    className: ''
+                },
+                {
+                    name: '销量',
+                    className: '',
+                    sort: true
+                },
+                {
+                    name: '价格',
+                    className: '',
+                    sort: true
+                },
+                {
+                    name: '',
+                    className: ['iconfont icon-liebiao icon_size','iconfont icon-tupianliebiao icon_size']
+                }
+            ],
+            sortArr: [
+                '',
+                '',
+                '',
+            ]
+        }
+        methods = {
+            changeItem(status, index){
+                // console.log(status)
+                // console.log(index)
+                this.listStyleStatus = !this.listStyleStatus
+                if(index == 3){
+                    this.goodsListConfig[0].listData.forEach( item => {
+                        item.model = this.listStyleStatus ? 'small' : 'long'
+                    });
+                    this.$apply()
+                }
+            }
+        }
+        getCategoryData(){
+            wepy.request({
+                url: `${this.api_host}/restapi/goods`,
+                data: {
+                    config_id: 634,
+                    page: 1,
+                    per_page: 12,
+                    sortby: '',
+                    sort: '', //asc 升序 desc 降序，
+                    status: 1,
+                    // category_id: this.categoryId
+                },
+                success: (res) => {
+                    console.log(res.data.data)
+                    const data = res.data.data.items.map( (item, index) => {
+                        return {
+                            imgUrl: item.thumb.indexOf('http') > -1 ? item.thumb : `${this.img_host}${item.thumb}`,
+                            title: item.name,
+                            details: '',
+                            model: this.listStyle[index] || 'small',
+                            market_price: item.market_price,
+                            price: item.price,
+                            id: item.id
+                        }
+                    })
+                    console.log(data)
+                    let obj = {
+                        id: 1,
+                        listData: data
+                    }
+                    this.goodsListConfig.push(obj)
+                    this.$apply()
+                    console.log(this.goodsListConfig)
+                }
+            })
+        }
+
+        onLoad(option){
+            wepy.setNavigationBarTitle({
+                title: option.name
+            })
+            this.categoryId = option.id
+            getExtJson.call(this)
+            this.getCategoryData()
+            this.$apply()
+        }
+
+    }
+
+</script>
+
+

@@ -1,0 +1,78 @@
+
+<style lang="scss">
+    .pay_items{
+        &_wrap{
+            display: flex;
+            padding: 10rpx;
+            margin: 12rpx 0;
+            box-shadow: -4rpx 4rpx 8rpx -2rpx #ccc;
+        }
+        &_msg{
+            margin-left: 14rpx;
+            flex-grow: 1;
+        }
+        &_img{
+            $imgSize: 160rpx;
+            width: $imgSize;
+            height: $imgSize;
+            flex-shrink: 0;
+            background: {
+                size: cover;
+                position: center;
+            }
+        }
+        &_name{
+            font-size: 32rpx;
+            line-height: 48rpx;
+            display: -webkit-box;
+            overflow: hidden;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+        &_price{
+            $priceSize: 60rpx;
+            height: $priceSize;
+            line-height: $priceSize;
+            font-size: 36rpx;
+            text-align: right;
+            color: #dd6130;
+        }
+    }
+</style>
+
+<template>
+    <view class="pay_items_wrap">
+        <view class="pay_items_img" style="background-image: url({{payItemsConfig.thumb}})"></view>
+        <view class="pay_items_msg">
+            <view class="pay_items_name">
+                {{payItemsConfig.goods_name}}
+            </view>
+            <view class="pay_items_price">
+                {{payItemsConfig.allPrice}}
+            </view>
+        </view>
+    </view>
+</template>
+
+<script>
+
+    import wepy from 'wepy'
+
+    export default class PayItems extends wepy.component{
+        
+        // props = {
+        //     parItemsConfig: {
+        //         type: Array,
+        //         coerce: (res) => {
+        //             return res
+        //         }
+        //     }
+        // }
+        onLoad(){
+            
+        }
+
+    }
+</script>
+
+

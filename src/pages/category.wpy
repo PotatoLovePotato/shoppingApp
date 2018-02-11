@@ -1,0 +1,97 @@
+
+<style lang="scss">
+    page{
+        background: #f2f2f2;
+    }
+</style>
+
+<template>
+    <view class="category_wrap">
+        <left-nav :leftNavConfig.sync="leftNavConfig"></left-nav>
+    </view>
+</template>
+
+<script>
+
+    import wepy from 'wepy'
+    import LeftNav from '../components/LeftNav'
+
+    export default class Category extends wepy.page {
+        config = {
+            navigationBarTitleText: '分类',
+        }
+        components = {
+            "left-nav": LeftNav
+        }
+        data = {
+            leftNavConfig: [ //数据结构 leftNavConfig 为 Array 每一项为Object navText 为左边导航文字 id 为一级导航和二级导航 parent_id 匹配 index 为导航索引 shopList 为Array 是右边显示区的列表 
+            ]
+        }
+        computed = {
+            
+        }
+
+        events = {
+            goTo(id, name){
+                console.log(id)
+                wepy.navigateTo({
+                    url: `categoryInfo?id=${id}&name=${name}`
+                })
+            }
+        }
+
+        getCategory(){
+            wepy.request({
+                url: `${this.extJson.api_host}/restapi/goods-category`,
+                data: {
+                    merchant_id: this.extJson.merchant_id,
+                    config_id: this.extJson.config_id,
+                    type: 0
+                },
+                success: (res) => {
+                    let data = res.data.data.items
+                    this.shopList(data) //处理数据为需要的格式
+                    this.$apply()
+                }
+            })
+        }
+        shopList(data){
+            let index = 0
+            let img_host =this.extJson.img_host
+            for(let i = 0; i < data.length; i++){
+                if(data[i].level == 0){
+                    this.leftNavConfig.push({
+                        navText: data[i].name,
+                        id: data[i].id,
+                        index: index,
+                        shopList: []
+                    })
+                    data.splice(i, 1)
+                    i--
+                    index++
+                }
+            }
+            this.leftNavConfig.forEach( item => {
+                data.forEach( ele => {
+                    if(item.id == ele.parent_id){
+                        ele.icon = `${img_host}${ele.icon}`
+                        item.shopList.push(ele)
+                    }
+                });
+            });
+            return this.leftNavConfig
+        }
+        getExtJson(){ //获取第三方ext.json 中ext字段中的数据
+			if(wepy.getExtConfigSync){ //低版本兼容检测
+				this.extJson = wepy.getExtConfigSync()
+			}
+		}
+        onLoad(){
+            this.getExtJson()
+            this.getCategory()
+        }
+    }
+
+</script>
+
+

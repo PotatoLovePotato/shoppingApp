@@ -1,0 +1,270 @@
+
+<style lang="scss">
+    .member_info_tab_view{
+        padding-top: 50rpx;
+        &_not{
+            line-height: 240rpx;
+            text-align: center;
+            font-size: 36rpx;
+        }
+        &_item{
+            padding: 0 20rpx;
+            border-top: 12rpx solid #dedede;
+        }
+        &_top,
+        &_price{
+            display: flex;
+            font-size: 28rpx;
+            justify-content: space-between;
+        }
+        &_top{
+            line-height: 80rpx;
+        }
+        &_cont{
+            display: flex;
+            flex-wrap: wrap;
+            &_img_wrap{
+                width: 33.33%;
+                flex-shrink: 0;
+                margin-bottom: 12rpx;
+                view{
+                    width: 230rpx;
+                    height: 190rpx;
+                    margin: 0 auto;
+                    background: {
+                        size: cover;
+                        position: center;
+                    }
+                }
+                
+            }
+        }
+        &_price{
+            padding: 12rpx 0;
+            view:nth-of-type(1){
+                font-size: 38rpx;
+                color: #e6416c
+            }
+            view:nth-of-type(2){
+                width: 120rpx;
+                height: 48rpx;
+                line-height: 48rpx;
+                font-size: 24rpx;
+                text-align: center;
+                color: #333;
+                border-radius: 12rpx;
+                background-color: #f2f2f2;
+                border: 1px solid #dedede;
+            }
+        }
+
+    }
+    .member_info_top{
+        width: 100%;
+        background-color: #fff;
+        position: fixed;
+        left: 0;top: 0;
+    }
+</style>
+
+<template>
+    <view class="member_info_wrap">
+        <view class="member_info_top">
+            <tab-switch :switchConfig.sync="switchConfig" :currentIndex.sync="current" @changeCurrent.user="changeCurrent"></tab-switch>
+        </view>
+
+        <view class="member_info_tab_view_not" wx:if="{{tabViewStatus}}">
+            暂无此类订单
+        </view>
+
+        <view class="member_info_tab_view" wx:if="{{!tabViewStatus}}">
+            <repeat for="{{tabView}}">
+
+                <view class="member_info_tab_view_item">
+                    <view class="member_info_tab_view_top">
+                        <view>
+                            订单编号:{{item.id}}
+                        </view>
+                        <view>
+                            {{item.status}}
+                        </view>
+                    </view>
+
+                    <view class="member_info_tab_view_cont">
+                        <repeat for="{{item.goods}}" item="goods">
+                            <view class="member_info_tab_view_cont_img_wrap">
+                                <view style="background-image: url({{goods.thumb}})"></view>
+                            </view>
+                        </repeat>
+                        <repeat for="{{item.goods}}" item="goods">
+                            <view class="member_info_tab_view_cont_img_wrap">
+                                <view style="background-image: url({{goods.thumb}})"></view>
+                            </view>
+                        </repeat>
+                        <repeat for="{{item.goods}}" item="goods">
+                            <view class="member_info_tab_view_cont_img_wrap">
+                                <view style="background-image: url({{goods.thumb}})"></view>
+                            </view>
+                        </repeat>
+                    </view>
+
+                    <view class="member_info_tab_view_price">
+                        <view>
+                            ￥{{item.goods_price}}
+                        </view>
+                        <view>
+                            {{item.btnText}}
+                        </view>
+                    </view>
+                </view>
+
+            </repeat>
+        </view>
+    </view>
+</template>
+
+<script>
+
+    import wepy from 'wepy'
+    import TabSwitch from '../components/TabSwitch'
+    import getExtJson from '../mixins/getExtJson.js'
+
+    export default class MemberInfo extends wepy.page{
+        config = {
+            
+        }
+        components = {
+            'tab-switch': TabSwitch
+        }
+        methods = {
+            changeCurrent(index){
+                wepy.showLoading({
+                    title: '加载中...',
+                    mask: true
+                })
+                if(index != 4){
+                    this.getTabViewData(index)
+                }else{
+                    this.getTabViewData()
+                }
+                
+                this.tabView = this.tabViewConfig[index]
+                wepy.setNavigationBarTitle({
+                    title: this.status[index]
+                })
+            }
+        }
+        data = {
+            current: 0,
+            switchConfig: [
+                {
+                    name: '待付款',
+                },
+                {
+                    name: '待发货',
+                },
+                {
+                    name: '待收货',
+                },
+                {
+                    name: '已完成',
+                },
+                {
+                    name: '全部订单',
+                },
+            ],
+            tabViewConfig: [],
+            tabView: [],
+            tabViewStatus: true,
+            status: [
+                '待付款',
+                '待发货',
+                '待收货',
+                '已完成',
+                '全部订单',
+            ]
+        }
+        getTabViewData(index){
+            let data = {}
+            if(index){
+                const status = this.status[index]
+                data = {
+                    config_id: this.config_id,
+                    pagesize: 12,
+                    page: 1,
+                    filter:[
+                        {
+                            status: status
+                        },
+                        {
+                            openid: this.openid
+                        }
+                    ],
+                    expand: 'goods'
+                }
+            }else{
+                data = {
+                    config_id: this.config_id,
+                    pagesize: 12,
+                    page: 1,
+                    filter:[
+                        {
+                            openid: this.openid
+                        }
+                    ],
+                    expand: 'goods'
+                }
+            }
+
+            wepy.request({
+                url: `${this.api_host}/restapi/goods-orders`,
+                data: data,
+                success: (res) => {
+                    
+                    let inx = index || 4
+                    let data = res.data.data.items
+                    this.tabViewConfig[inx] = this.addBtnText(data)
+                    this.tabView = this.addBtnText(data)
+                    this.tabViewStatus = this.tabView.length > 0 ? false : true
+                    this.$apply()
+                    wepy.hideLoading()
+                }
+            })
+        }
+        addBtnText(data){
+            data.forEach( item => {
+                if(item.status == '待付款'){
+                    item.btnText = '付款'
+                }else if(item.status == '待发货'){
+                    item.btnText = '提醒卖家'
+                }else if(item.status == '已发货'){
+                    item.btnText = '查看物流'
+                }else if(item.status == '已完成'){
+                    item.btnText = '退款'
+                }
+            })
+            return data
+        }
+        onLoad(option){
+            this.current = option.index
+            this.tabView = this.tabViewConfig[option.index]
+            getExtJson.call(this)
+            if(option.index != 4){
+                this.getTabViewData(option.index)
+            }else{
+                this.getTabViewData()
+            }
+            
+            wepy.setNavigationBarTitle({
+                title: this.status[option.index]
+            })
+            wepy.showLoading({
+                title: '加载中...',
+                mask: true
+            })
+        }
+    }
+
+</script>
+
+

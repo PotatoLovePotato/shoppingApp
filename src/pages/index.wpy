@@ -1,0 +1,324 @@
+<style lang="scss">
+    .shop{
+        .goods_list{
+            padding: 0rpx 30rpx 16rpx;
+            border-bottom: 10rpx solid #ededed; 
+        }
+    }
+    .icon_size{
+        font-size: 156rpx;
+        text-align: center;
+    }
+
+</style>
+<template>
+    <view class="container">
+        
+        <!-- 轮播图 -->
+        <carousel :carouselConfig.sync="carouselConfig"></carousel>
+        
+        <!-- 导航 -->
+        <nav :navConfig.sync="navConfig"></nav>
+
+        <!-- 优惠券 -->
+        <coupon :couponConfig.sync="couponConfig"></coupon>
+
+        <!-- 商品块 -->
+        <view class="shop">
+            
+            <repeat for="{{goodsListConfig}}" item="item" index="index" key="key">
+                <goodsList :goodsListConfig.sync="item">
+                    <view slot="title">
+                        {{item.title}}
+                    </view>
+                </goodsList>
+            </repeat>
+            
+        </view>
+        <toast></toast>
+    </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import Carousel from '../components/swiper/Carousel'
+  import Nav from '../components/navigation/Nav'
+  import GoodsList from '../components/GoodsList'
+  import Coupon from '../components/Coupon'
+  import Toast from 'wepy-com-toast'
+
+  export default class Index extends wepy.page {
+    config = {
+        navigationBarTitleText: '首页'
+    }
+    components = {
+        carousel: Carousel,
+        nav: Nav,
+        goodsList: GoodsList,
+        coupon: Coupon,
+        toast: Toast
+    }
+
+    mixins = []
+
+    data = {
+        carouselConfig: {
+            imgUrls: [],
+            dotsColor: '#d9524f',
+            dotsActiveColor: '#fff'
+        },
+        navConfig: [],
+        goodsListConfig: [ // id (暂时没用到) title区域名称 待完善图片 listData 区域列表 每一项为对象
+            
+            // listData数据结构 model（辅助数据id1-4 来源ext 暂定） 展现方式 'long' 是否是通栏 long 为通栏 small 为两栏 列表配置项 list为列表 imgURL: 图片地址 title 标题文字 datails 商品简介 market_price市场价格 price 出售价格 id 商品id disabled 购买按钮是否可用（待完善）
+        ],
+        api_host: '',
+        img_host: '',
+        config_id: '',
+        merchant_id: '',
+        menu: null,
+        // id1: [ //接口自定义标识 如抢购为 id1 暂定 每一项为string 'long'代表为通栏 'small' 代表平分 无书写顺序 个数决定页面样式 如 有3个 'long' 两个 small 页面为 上边3个通栏 底下两个平分 small建议一次添加两个 （暂定） 已被extjson中的数据替换
+        //     'long',
+        // ],
+        // id2: [],
+        // id3: [],
+        // id4: [],
+        couponConfig: {
+            title: '优惠券',
+            data: []
+        }
+    }
+
+    computed = {
+      
+    }
+
+    methods = {
+     
+      toast () {
+        let promise = this.$invoke('toast', 'show', {
+          title: '自定义标题',
+          img: 'https://raw.githubusercontent.com/kiinlam/wetoast/master/images/star.png'
+        })
+      }
+    }
+
+    events = {
+        getCoupon(index, id){
+            wepy.showLoading({
+                title: '加载中...',
+                mask: true
+            })
+            wepy.request({
+                url: `${this.api_host}/restapi/wechat-my-coupons`,
+                method: 'POST',
+                data: {
+                    config_id: this.config_id,
+                    apps_openid: this.openid,
+                    coupon_id: id
+                },
+                success: (res) => {
+                    wepy.hideLoading()
+                    console.log(res.data)
+                    if(res.data.success){
+                        this.$invoke('toast', 'show', {
+                            title: '领取成功',
+                            imgClassName: 'iconfont icon-chenggong icon_size'
+                        })
+                        this.$apply()
+                    }else{
+                        this.$invoke('toast', 'show', {
+                            title: res.data.data.message,
+                            imgClassName: 'iconfont icon-shibaibiaoqing icon_size'
+                        })
+                    }
+                    
+                }
+            })
+        }
+    }
+
+    // 轮播图数据请求 
+	getCarousel(){
+		wx.request({
+			url: `${this.api_host}/restapi/wechat-focus`,
+			data: {
+				config_id: this.config_id,
+				belongs: 1,
+				type: 0
+			},
+			success: (res) => {
+				const data = res.data.data.map( (item) => {
+					return `${this.img_host}${item.image}`
+				})
+				this.carouselConfig.imgUrls = data
+				this.$apply()
+			}
+		})
+	}
+
+    //获取ext
+    getExtJson(){
+		if (wepy.getExtConfigSync) {
+			const extConfig = wepy.getExtConfigSync();
+			this.api_host = extConfig.api_host
+			this.img_host = extConfig.img_host
+			this.config_id = extConfig.config_id
+            this.merchant_id = extConfig.merchant_id
+            this.menu = extConfig.menu
+            this.flag = extConfig.flag;
+            this.openid = wepy.getStorageSync('openid')
+			this.getCarousel()
+            this.getMenu(this.menu) 
+            this.getListDataPromise()
+            // this.flag.forEach( item => {
+            //     console.log(item)
+               
+            //     // this.getGoodsList(item.tag, item.num, item.flag, item.style)
+            // });
+            
+		}
+    }
+    // 获取菜单数据
+    getMenu(data){
+        if(wx.getExtConfig) {
+			wx.getExtConfig({
+				success: (res) => {
+					// pages/article
+					const menu = data.map( (item) => {
+						let url = item.page.split('?')
+						let obj
+						if(url[1]){
+							obj = {}
+							let key = url[1].split('=')[0]
+							let val = url[1].split('=')[1]
+							obj[key] = val
+						}
+						return {
+							imgUrl: `${this.img_host}${item.icon}`,
+							navText: item.name,
+							navTo: url[0],
+							query: obj
+						}
+					})
+					menu && (this.navConfig = menu)
+					this.$apply()
+				}
+			})
+		}
+    }
+    getListDataPromise(index){
+        index = index || 0
+        new Promise( (resolve, reject) => {
+            wepy.request({
+                url: `${this.api_host}/restapi/goods`,
+                data: {
+                    config_id: 634,
+                    page: 1,
+                    per_page: this.flag[index].num,
+                    flag: this.flag[index].flag
+                },
+                success: (res) => {
+                    const data = res.data.data.items.map( (item, inx) => {
+                        return {
+                            imgUrl: item.thumb.indexOf('http') > -1 ? item.thumb : `${this.img_host}${item.thumb}`,
+                            title: item.name,
+                            details: '',
+                            model: this.flag[index].style[inx] || 'small',
+                            market_price: item.market_price,
+                            price: item.price,
+                            id: item.id
+                        }
+                    })
+                    let obj = {
+                        id: this.flag[index].flag,
+                        title: this.flag[index].tag,
+                        listData: data
+                    }
+                    this.goodsListConfig.push(obj)
+                    resolve(++index)
+                    this.$apply()
+                }
+            })
+        }).then( index => {
+            if(index < this.flag.length){
+                this.getListDataPromise(index)
+            }
+        })
+    }
+    // 获取商品数据 （还未完善）
+    // getGoodsList(title, pageNum, flag, style){
+    //     wepy.request({
+    //         url: `${this.api_host}/restapi/goods`,
+    //         data: {
+    //             config_id: 634,
+    //             page: 1,
+    //             per_page: pageNum,
+    //             flag: flag
+    //         },
+    //         success: (res) => {
+    //             console.log(res)
+    //             const data = res.data.data.items.map( (item, index) => {
+    //                 return {
+    //                     imgUrl: item.thumb.indexOf('http') > -1 ? item.thumb : `${this.img_host}${item.thumb}`,
+    //                     title: item.name,
+    //                     details: '',
+    //                     model: style[index] || 'small',
+    //                     market_price: item.market_price,
+    //                     price: item.price,
+    //                     id: item.id
+    //                 }
+    //             })
+    //             let obj = {
+    //                 id: flag,
+    //                 title: title,
+    //                 listData: data
+    //             }
+    //             this.goodsListConfig.push(obj)
+    //             resolve(index++)
+    //             this.$apply()
+    //             console.log(this.goodsListConfig)
+    //         }
+    //     })
+    // }
+    //获取优惠券信息
+    getCoupon(){
+        wepy.request({
+            url: `${this.api_host}/restapi/wechat-coupon`,
+            data: {
+                config_id: 634,
+                apps_openid: this.openid
+            },
+            success: (res) => {
+
+                res.data.data.forEach( item => {
+                    if(true){
+                        this.couponConfig.data.push({
+                            id: item.id,
+                            name: item.coupon_name,
+                            terms: item.order_odds,
+                            money: item.face_value,
+                            method: 'getCoupon'
+                        })
+                    }
+                })
+                this.$apply()
+                console.log(this.couponConfig)
+            }
+        })
+    }
+
+    onLoad() {
+        this.getExtJson()
+        this.getCoupon()
+
+        let self = this
+        this.$parent.getUserInfo(function (userInfo) {
+            if (userInfo) {
+            self.userInfo = userInfo
+            }
+            self.$apply()
+        })
+    }
+  }
+</script>

@@ -1,0 +1,272 @@
+
+<style lang="scss">
+    .payment{
+        &_wrap{
+            padding: 0 30rpx;
+            padding-bottom: 105rpx;
+            box-sizing: border-box;
+        }
+        &_top{
+            height: 100%;
+        }
+        &_bar{
+            display: flex;
+            width: 100%;
+            height: 100rpx;
+            line-height: 100rpx;
+            border-top: 1px solid #ccc;
+            background-color: #fff;
+            position: fixed;
+            left: 0;bottom: 0;
+            &_price{
+                flex-grow: 1;
+                text-align: right;
+                padding-right: 36rpx;
+                color: #fc2626;
+            }
+            &_btn{
+                width: 160rpx;
+                flex-shrink: 0;
+                text-align: center;
+                font-size: 36rpx;
+                color: #fff;
+                background-color: #d64723;
+            }
+        }
+        &_msg{
+            .address_btn{
+                display: block;
+                width: 60%;
+                font-size: 24rpx;
+                padding: 16rpx 24rpx;
+                margin: 0 auto;
+                text-align: center;
+                color: #f1f1f1;
+                background-color: #ee3b3b;
+                border-radius: 10rpx;
+            }
+            &_ticket{
+                padding: 14rpx;
+                text{
+                    display: block;
+                    line-height: 36rpx;
+                    font-size: 24rpx;
+                    border-left: 8rpx solid #ee3b3b;
+                    text-indent: .5em;
+                }
+                &_not{
+                    font-size: 32rpx;
+                    text-align: center;
+                }
+            }
+            &_address{
+                display: flex;
+                &_msg{
+                    flex-grow: 1;
+                }
+                &_name{
+                    display: flex;
+                    view{
+                        flex: 1;
+                        font-size: 24rpx;
+                        line-height: 50rpx;
+                        font-size: 32rpx;
+                        display: inline-block;
+                        vertical-align: middle;
+                        margin-left: 14rpx;
+                        // text-align: center;
+                    }
+                }
+                &_info{
+                    font-size: 26rpx;
+                    line-height: 36rpx;
+                    padding: 0 16rpx;
+                }
+                &_left_icon,
+                &_right_icon{
+                    width: 60rpx;
+                    text-align: center;
+                    font-size: 36rpx;
+                    color: #999;
+                    flex-shrink: 0;
+                    &:after{
+                        content: '';
+                        display: inline-block;
+                        height: 100%;
+                        vertical-align: middle;
+                    }
+                    view{
+                        display: inline-block;
+                        vertical-align: middle;
+                    }
+                }
+                &_right_icon{
+                    width: 40rpx;
+                    font-size: 16rpx;
+                }
+            }
+        }
+    }
+    .icon_size{
+        font-size: 156rpx;
+    }
+</style>
+
+<template>
+
+    <view class="payment_wrap">
+
+        <view class="payment_msg">
+           
+            <text @tap="openAddress" class="address_btn" wx:if="{{!address.userName}}">选择收货地址</text>
+            <view @tap="openAddress" class="payment_msg_address" wx:if="{{address.userName}}">
+                <view class="payment_msg_address_left_icon">
+                    <view class="iconfont icon-dizhi"></view>
+                </view>
+                <view class="payment_msg_address_msg" >
+                    <view class="payment_msg_address_name">
+                        <view>{{address.userName}}</view>
+                        <view>{{address.telNumber}}</view>
+                    </view>
+                    
+                    <view class="payment_msg_address_info">
+                        {{address.provinceName}}{{address.cityName}}{{address.countyName}}{{address.detailInfo}}
+                    </view>
+
+                </view>
+                <view class="payment_msg_address_right_icon">
+                    <view class="iconfont icon-shuangjiantou"></view>
+                </view>
+            </view>
+
+            <view class="payment_msg_ticket">
+                <text>优惠券</text>
+                <view class="payment_msg_ticket_not">
+                    暂无优惠券可用
+                </view>
+            </view>
+        </view>
+
+        <scroll-view class="payment_top" scroll-y>
+            <repeat for="{{payDataMsg}}">
+                <pay-items :payItemsConfig="item"></pay-items>
+            </repeat>
+        </scroll-view>
+
+        <view class="payment_bar">
+            <view class="payment_bar_price">
+                {{allPrice}}
+            </view>
+            <view class="payment_bar_btn" @tap="payActive">
+                结算
+            </view>
+        </view>
+        <toast />
+    </view>
+
+</template>
+
+<script>
+
+    import wepy from 'wepy'
+    import PayItems from '../components/PayItems'
+    import retainedDecimalMoney from '../mixins/retainedDecimalMoney'
+    import getExtJson from '../mixins/getExtJson'
+    import Toast from 'wepy-com-toast'
+
+    export default class Payment extends wepy.page{
+        config = {
+            navigationBarTitleText: '购买'
+        }
+        components = {
+            'pay-items': PayItems,
+            toast: Toast
+        }
+        data = {
+            payDataMsg: [],
+            allPrice: '￥0',
+            address: {}
+        }
+        methods = {
+            openAddress(){
+                wepy.chooseAddress({
+                    success: (res) => {
+                        this.address = res
+                        wepy.setStorageSync('normalAddress', res)
+                        this.$apply()
+                    }
+                })
+            },
+            payActive(){
+                let payGoods = wepy.getStorageSync('payGoods').map( item => {
+                    return {
+                        goods_id: item.goods_id,
+                        goods_name: item.goods_name,
+                        skucode: item.skucode,
+                        props: item.props,
+                        price: item.price,
+                        quantity: item.quantity,
+                        thumb: item.thumb
+                    }
+                })
+                wepy.request({
+                    url: `${this.api_host}/restapi/goods-orders`,
+                    method: 'POST',
+                    data: {
+                        items: payGoods,
+                        config_id: this.config_id,
+                        real_name: this.address.userName, //自己的姓名
+                        mobile: this.address.telNumber,
+                        province: this.address.provinceName,
+                        city: this.address.cityName,
+                        county: this.address.countyName,
+                        address: this.address.detailInfo,
+                        zip: this.address.postalCode,
+                        goods_price: +this.allPrice.substr(1),
+                        openid: this.openid,
+                        source: '小程序'
+                    },
+                    success: (res) => {
+                        console.log(res)
+                        wepy.requestPayment({
+                            timeStamp: res.data.data.timeStamp,
+                            nonceStr: res.data.data.nonceStr,
+                            package: res.data.data.package,
+                            signType: res.data.data.signType,
+                            paySign: 'res.data.data.paySign',
+                            success: (res) => {
+                                wepy.showToast({
+                                    title: '支付成功',
+                                    icon: 'success',
+                                    duration: 1000
+                                })
+                            },
+                            fail: (res) => {
+                                // err_desc
+                                this.$invoke('toast', 'show', {
+                                    title: '支付失败',
+                                    imgClassName: 'iconfont icon-shibaibiaoqing icon_size'
+                                })
+                                console.log('err', res)
+                            }
+                        })
+                    }
+                })
+            }
+        }
+        onLoad(){
+            this.payDataMsg = wepy.getStorageSync('payGoods')
+            this.allPrice = retainedDecimalMoney(this.payDataMsg.reduce( (normal, item) => {
+                return (+item.price * item.quantity) + normal
+            },0))
+            console.log(this.allPrice)
+            const normalAddress = wepy.getStorageSync('normalAddress')
+            this.address = normalAddress ? normalAddress : {}
+            getExtJson.call(this)
+            this.$apply()
+        }
+    }
+
+</script>
+
+

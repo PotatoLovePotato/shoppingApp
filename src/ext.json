@@ -1,0 +1,77 @@
+{
+    "extEnable": true,
+    "extAppid": "wx38f46ade076245fd",
+    "directCommit": false,
+    "ext": {
+        "config_id": 634,
+        "merchant_id": 130,
+        "api_host": "https://www.xiaoniren.cn",
+        "img_host": "http://www.xiaoniren.cn",
+        "style": "default",
+        "menu": [
+            {
+                "name": "\u6210\u529f\u6848\u4f8b",
+                "icon": "/upload/wechatpage/icon/201801/15166940712843.png",
+                "page": "article?id=889"
+            },
+            {
+                "name": "\u516c\u53f8\u4ecb\u7ecd",
+                "icon": "/upload/wechatpage/icon/201801/15166940532650.png",
+                "page": "article?id=888"
+            },
+            {
+                "name": "\u7559\u8a00\u7c3f",
+                "icon": "/img/weapp_img/menu_icon/icon_gbook.png",
+                "page": "gbook"
+            },
+            {
+                "name": "\u5730\u56fe\u5bfc\u822a",
+                "icon": "/img/weapp_img/menu_icon/icon_map.png",
+                "page": "map"
+            }
+        ],
+        "flag": [
+            {
+                "tag": "\u6807\u98980",
+                "flag": 1,
+                "num": 5,
+                "style": ["long"]
+            },
+            { 
+                "tag": "\u6807\u98981", 
+                "flag": 2, 
+                "num": 4, 
+                "style": []
+            },
+            {
+                "tag": "\u6807\u98982",
+                "flag": 3,
+                "num": 6,
+                "style": [
+                    "long", 
+                    "long"
+                ]
+            },
+            { 
+                "tag": "\u6807\u98983", 
+                "flag": 4, 
+                "num": 4, 
+                "style": [
+                    "long",
+                    "long",
+                    "long",
+                    "long"
+                ] 
+            }
+        ]
+    },
+    "extPages": {},
+    "window": {
+        "backgroundTextStyle": "light",
+        "navigationBarBackgroundColor": "#fc3e62",
+        "navigationBarTitleText": "\u5c0f\u6ce5\u4eba\u6ed1\u96ea",
+        "navigationBarTextStyle": "#fff"
+    },
+    "networkTimeout": {},
+    "tabBar": {}
+}
